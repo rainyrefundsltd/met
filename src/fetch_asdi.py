@@ -2,11 +2,12 @@
 
 from aiohttp import ClientError
 import boto3
+import botocore
 import logging
 from config import AWS_ACCESS, AWS_SECRET, AWS_REGION
 
-bucket_name = "met-office-atmospheric-model-data"
-prefix = "uk-deterministic-2km/"
+BUCKET_NAME = "met-office-atmospheric-model-data"
+PREFIX = "uk-deterministic-2km/"
 
 
 def list_object_v2(aws_access, aws_secret, aws_region, bucket_name, prefix):
@@ -35,6 +36,15 @@ def list_object_v2(aws_access, aws_secret, aws_region, bucket_name, prefix):
     
     return True
 
+# https://boto3.amazonaws.com/v1/documentation/api/1.9.42/guide/s3-example-download-file.html
+def download_file():
+    
+    s3 = boto3.resource('s3')
+
+    try:
+        s3.Bucket(BUCKET_NAME).download_file(KEY, )
+
+
 if __name__ == "__main__":
 
-    list_object_v2(AWS_ACCESS, AWS_SECRET, AWS_REGION, bucket_name, prefix)
+    list_object_v2(AWS_ACCESS, AWS_SECRET, AWS_REGION, BUCKET_NAME, PREFIX)

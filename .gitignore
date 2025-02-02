@@ -10,7 +10,9 @@ __pycache__/
 *.pyd
 
 # Ignore everything in the data folder
-data/*
+data/asdi/*
+data/met_forecasts/*
 
 # But allow .gitkeep
-!data/.gitkeep
+!data/asdi/.gitkeep
+!data/met_forecasts/.gitkeep

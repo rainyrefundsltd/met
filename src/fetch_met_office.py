@@ -30,7 +30,7 @@ class MetFileImporter:
         self.numFilesPerOrder = 0
 
         # File drop location
-        self.baseFolder = "data"
+        self.baseFolder = "data/met_forecasts"
         os.makedirs(self.baseFolder, exist_ok=True)
 
         # Request header including API (from .env file)
