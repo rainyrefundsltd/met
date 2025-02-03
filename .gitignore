@@ -13,6 +13,6 @@ __pycache__/
 data/asdi/*
 data/met_forecasts/*
 
-# But allow .gitkeep
+# But allow .gitkeep so folders aren't deleted
 !data/asdi/.gitkeep
 !data/met_forecasts/.gitkeep
