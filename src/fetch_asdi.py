@@ -1,14 +1,14 @@
+# fetch_asdi.py
+
 # Script to fetch ASDI data
 
 import boto3
+import argparse
 from datetime import datetime
 import os
+import sys
 import numpy as np
 from config import AWS_ACCESS, AWS_SECRET, AWS_REGION
-
-BUCKET_NAME = "met-office-atmospheric-model-data"
-PREFIX = "uk-deterministic-2km/"
-FILE_NAME_FORMAT = "rainfall_accumulation-PT01H.nc" # precipitation_rate.nc
 
 
 def _naming_convention(dt):
@@ -142,12 +142,24 @@ def download_files(forecast_publish_date, AWS_ACCESS, AWS_SECRET, AWS_REGION, BU
 
 if __name__ == "__main__":
     
-    """
-    Compare these files: 
-        1) uk-deterministic-2km/20230202T0000Z/20230203T0100Z-PT0025H00M-rainfall_accumulation-PT01H.nc, 519.1923828125 KB
-        2) uk-deterministic-2km/20230203T0000Z/20230203T0100Z-PT0001H00M-rainfall_accumulation-PT01H.nc, 504.126953125 KB
-    """
-    
-    forecast_publish_date = datetime(2024,2,3,6) # Initial folder dt
+    # Set up argument parsing
+    parser = argparse.ArgumentParser(description="Download files based on forecast publish date.")
+    parser.add_argument("--date", required=True, help="The forecast publish date in 'YYYY-MM-DD HH:MM:SS' format")
 
-    download_files(forecast_publish_date, AWS_ACCESS, AWS_SECRET, AWS_REGION, BUCKET_NAME, PREFIX, FILE_NAME_FORMAT)
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Parse the date argument
+    try:
+        FORECAST_PUBLISH_DATE = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        print("Incorrect date format. Please use 'YYYY-MM-DD HH:MM:SS'")
+        sys.exit(1)
+
+    BUCKET_NAME = "met-office-atmospheric-model-data"
+    PREFIX = "uk-deterministic-2km/"
+    FILE_NAME_FORMAT = "rainfall_accumulation-PT01H.nc"
+    
+    # FORECAST_PUBLISH_DATE = datetime(2024,2,3,6)
+
+    download_files(FORECAST_PUBLISH_DATE, AWS_ACCESS, AWS_SECRET, AWS_REGION, BUCKET_NAME, PREFIX, FILE_NAME_FORMAT)
