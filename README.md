@@ -31,9 +31,9 @@ pip install -r requirements.txt
 4. Obtain your MET Office API key and copy it into a new .env file. Use .env.example as a guide.
 
 ## ASDI Configuration
-1. Create an AWS account [Create AWS Account](https://repost.aws/knowledge-center/create-and-activate-aws-account)
+1. Create an AWS account [Instructions on how to Create an AWS Account](https://repost.aws/knowledge-center/create-and-activate-aws-account)
 2. Create a user with an access key and secret access key. You can also look up your AWS region, if you are in the UK this will be 'eu-west-2'.Paste these into your private .env file.  
-3. The AWS bucket that we use in 'fetch_asdi.py' is here [AWS MET Office Historical Forecast Bucket](https://met-office-atmospheric-model-data.s3.eu-west-2.amazonaws.com/index.html#uk-deterministic-2km/)
+3. The AWS bucket that we use in 'fetch_asdi.py' is here [AWS MET Office Historical Forecast Bucket](https://met-office-atmospheric-model-data.s3.eu-west-2.amazonaws.com/index.html)
 
 Your final .env file should look like this:
 ```ini
