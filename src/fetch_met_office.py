@@ -343,7 +343,7 @@ class MetFileImporter:
 
         return [ttfb, local_filename]
 
-    def download_worker(self, downloadTask):
+    def download_worker(self, downloadTask, fileDateString):
         try:
             # Extract task details
             fileId = downloadTask["fileId"]
@@ -353,7 +353,7 @@ class MetFileImporter:
             # Construct download URL and file path
             download_url = f"{downloadTask['baseUrl']}/orders/{downloadTask['orderName']}/latest/{fileId}/data".replace(
                 "+", "%2B") # encoding error with + signs
-            file_path = os.path.join(folder, f"{fileId}.grib2")  # Customize file naming as needed
+            file_path = os.path.join(folder, f"{fileId}_{fileDateString}.grib2")  # Customize file naming as needed
 
             # Make the API call and save the file
             response = requests.get(download_url, headers=headers, stream=True)
@@ -372,13 +372,15 @@ class MetFileImporter:
     def download_files(self, filesByRun):
 
         # Create folder to save files
-
         if self.verbose:
             print("Starting downloads")
 
         if self.perfMode:
             print("PM Download starting")
             pmstart = datetime.now()
+
+        # Get dt to append to file name in the download_worker function
+        fileDateString = datetime.now().strftime("%Y%m%d")
 
         # Process each file sequentially
         for fileId in filesByRun[self.run]:
@@ -395,7 +397,7 @@ class MetFileImporter:
             }
 
             # Call the worker directly to process the download
-            self.download_worker(downloadTask)
+            self.download_worker(downloadTask, fileDateString)
 
         if self.perfMode:
             pmend = datetime.now()
