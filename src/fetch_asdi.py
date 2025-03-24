@@ -132,7 +132,7 @@ def download_files(forecast_publish_date, AWS_ACCESS, AWS_SECRET, AWS_REGION, BU
 
     # Create folder in data/ to house output
     forecast_date_str = _naming_convention(forecast_publish_date)
-    os.makedirs(f"data/asdi/{forecast_date_str}",exist_ok=True) # Errors if the file already exists in data/asdi
+    os.makedirs(f"data/asdi/{forecast_date_str}",exist_ok=False) # Errors if the file already exists in data/asdi
 
     # Loop through files in np_arr and dowload into new directory
     for FILE_KEY in np_arr:
