@@ -1,1 +1,18 @@
 
+# Environment variables
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore everything in the data folder
+data/asdi/*
+data/met_forecasts/*
+
+# But allow .gitkeep so folders aren't deleted
+!data/asdi/.gitkeep
+!data/met_forecasts/.gitkeep
