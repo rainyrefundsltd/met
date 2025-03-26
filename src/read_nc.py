@@ -1,98 +1,185 @@
 
-"""Quick file to read an NC file. Initally created to determine the naming convention of the ASDI files"""
+"""Read an NC file easily using this script"""
 
-import netCDF4 as nc
-import numpy as np
-import pyproj
+
 import logging
-import sys
-import os
-import argparse
+import numpy as np
+import xarray as xr
+import pyproj
+from typing import Union, Tuple, List
 
-# Set logging to INFO if ran on the cmd
-logging.basicConfig(level=logging.CRITICAL)
 logger = logging.getLogger(__name__)
 
-def get_rainfall_m(fn, lat, lon):
-    
+def find_nearest(array: np.ndarray, values: Union[float, np.ndarray]) -> Union[int, np.ndarray]:
     """
-    Convert the coordinates to Lambert Azimuthal Equal Area and query the NetCDF file 
-    for the precipitation amount (m).
+    Find the index of the nearest value(s) in an array.
+    
+    Args:
+        array: 1D array to search in
+        values: Value(s) to find (can be scalar or array)
+        
+    Returns:
+        Index or array of indices of nearest values
     """
-
-    logger.info(f"Opening NetCDF file: {fn}")
-    dataset = nc.Dataset(fn)
-    
-    logger.info("Reading coordinate variables: 'projection_x_coordinate' and 'projection_y_coordinate'")
-    x = dataset.variables["projection_x_coordinate"][:]
-    y = dataset.variables["projection_y_coordinate"][:]
-    
-    logger.info("Setting up the Lambert Azimuthal Equal Area projection")
-    proj = pyproj.Proj("+proj=laea +lat_0=54.9 +lon_0=-2.5 +x_0=0 +y_0=0 +datum=WGS84")
-    # proj = pyproj.Proj("+proj=laea +lat_0=49.0 +lon_0=-2.0 +datum=WGS84")
-    
-    def find_nearest(array, value):
-        idx = np.abs(array - value).argmin()
-        logger.debug(f"find_nearest: Searching for {value} in array; nearest index is {idx}")
-        return idx
-
-    logger.info(f"Converting latitude/longitude ({lat}, {lon}) to projected coordinates")
-    x_target, y_target = proj(lon, lat)
-    logger.info(f"Projected coordinates: x_target={x_target}, y_target={y_target}")
-    
-    logger.info("Finding the nearest grid point indices")
-    x_idx = find_nearest(x, x_target)
-    y_idx = find_nearest(y, y_target)
-    logger.info(f"Nearest grid indices: x_idx={x_idx}, y_idx={y_idx}")
-    
-    logger.info("Extracting rainfall forecast from the dataset")
-    rainfall = dataset.variables["thickness_of_rainfall_amount"][y_idx, x_idx]
-    logger.info(f"Rainfall forecast at ({lat}, {lon}): {rainfall} m")
-    
-    logger.info("Closing the NetCDF dataset")
-    dataset.close()
-    
-    return rainfall
+    array = np.asarray(array)
+    values = np.asarray(values)
+    # Reshape array for broadcasting (add new axis for values)
+    array = array.reshape(-1, 1) if values.ndim > 0 else array
+    idx = np.abs(array - values).argmin(axis=0)
+    logger.debug(f"Found nearest indices {idx} for values {values}")
+    return idx
 
 
+def ensure_float(value: Union[np.ndarray, np.generic, float]) -> Union[float, np.ndarray]:
+    """
+    Ensure the value is returned as a Python float or numpy array of floats.
+    
+    Args:
+        value: Input value which might be numpy numeric type
+        
+    Returns:
+        Python float or numpy array of floats
+    """
+    if isinstance(value, (np.ndarray, np.generic)):
+        return value.astype(float)
+    return float(value)
 
+
+def latlon_to_rainfall(nc_file_path: str, 
+                      latitude: Union[float, List[float]], 
+                      longitude: Union[float, List[float]],
+                      return_indices: bool = False) -> Union[float, Tuple]:
+    """
+    Get rainfall forecast at nearest grid point to given latitude/longitude coordinates.
+    
+    Args:
+        nc_file_path: Path to the netCDF file
+        latitude: Latitude(s) to convert (degrees)
+        longitude: Longitude(s) to convert (degrees)
+        return_indices: Whether to return grid indices along with rainfall value
+        
+    Returns:
+        Rainfall value(s) as float(s) or tuple of (rainfall, x_idx, y_idx) if return_indices=True
+        For single points: returns Python float
+        For multiple points: returns numpy array of floats
+        
+    Raises:
+        ValueError: If input coordinates are outside grid bounds or shapes don't match
+        KeyError: If required variables are missing from netCDF file
+        RuntimeError: If there are problems with the NetCDF file
+    """
+    # Convert inputs to numpy arrays
+    lat_arr = np.atleast_1d(np.asarray(latitude, dtype=float))
+    lon_arr = np.atleast_1d(np.asarray(longitude, dtype=float))
+    
+    # Validate input shapes
+    if lat_arr.shape != lon_arr.shape:
+        raise ValueError("Latitude and longitude arrays must have the same shape")
+    
+    logger.info(f"Processing {lat_arr.size} coordinate(s): lat={lat_arr}, lon={lon_arr}")
+    
+    try:
+        with xr.open_dataset(nc_file_path, decode_timedelta=False) as ds:
+            # Validate required variables exist
+            required_vars = ['lambert_azimuthal_equal_area', 
+                           'projection_x_coordinate',
+                           'projection_y_coordinate',
+                           'thickness_of_rainfall_amount']
+            for var in required_vars:
+                if var not in ds:
+                    raise KeyError(f"Required variable {var} not found in netCDF file")
+            
+            # Get projection parameters
+            proj_var = ds['lambert_azimuthal_equal_area']
+            proj_params = {
+                'proj': 'laea',
+                'lat_0': proj_var.latitude_of_projection_origin,
+                'lon_0': proj_var.longitude_of_projection_origin,
+                'x_0': proj_var.false_easting,
+                'y_0': proj_var.false_northing,
+                'a': proj_var.semi_major_axis,
+                'b': proj_var.semi_minor_axis,
+                'units': 'm'
+            }
+            
+            # Create coordinate transformer
+            transformer = pyproj.Transformer.from_crs(
+                {'proj': 'latlong', 'ellps': 'WGS84', 'datum': 'WGS84'},
+                proj_params,
+                always_xy=True
+            )
+            
+            # Convert coordinates (handles arrays automatically)
+            x_target, y_target = transformer.transform(lon_arr, lat_arr)
+            logger.debug(f"Projected coordinates: x={x_target}, y={y_target}")
+            
+            # Get grid coordinates
+            x_arr = ds['projection_x_coordinate'].values
+            y_arr = ds['projection_y_coordinate'].values
+            
+            # Find nearest grid indices (handles arrays)
+            x_idx = find_nearest(x_arr, x_target)
+            y_idx = find_nearest(y_arr, y_target)
+            logger.info(f"Nearest grid indices: x_idx={x_idx}, y_idx={y_idx}")
+            
+            # Validate indices are within bounds
+            if np.any(x_idx < 0) or np.any(x_idx >= len(x_arr)) or \
+               np.any(y_idx < 0) or np.any(y_idx >= len(y_arr)):
+                raise ValueError("Target coordinates outside grid bounds")
+            
+            # Get rainfall value(s) - handles both scalar and array indices
+            rainfall = ds['thickness_of_rainfall_amount'].isel(
+                projection_y_coordinate=y_idx,
+                projection_x_coordinate=x_idx
+            ).values
+            
+            # Convert to proper float types
+            rainfall = ensure_float(rainfall)
+            logger.info(f"Rainfall values: {rainfall} m")
+            
+            # Squeeze single values from arrays
+            if lat_arr.size == 1:
+                rainfall = rainfall.item() if isinstance(rainfall, np.ndarray) else rainfall
+            
+            if return_indices:
+                if lat_arr.size == 1:
+                    return rainfall, int(x_idx), int(y_idx)
+                return rainfall, x_idx.astype(int), y_idx.astype(int)
+            return rainfall
+            
+    except Exception as e:
+        logger.error(f"Error processing coordinates: {str(e)}")
+        raise RuntimeError(f"Failed to process coordinates: {str(e)}")
+
+
+# Example usage
 if __name__ == "__main__":
-
-    logger.info("Starting the rainfall data query application.")
-
-    # # Parse command-line arguments
-    # parser = argparse.ArgumentParser(
-    #     description="Input coordinates and file name for data pull."
-    # )
-    # parser.add_argument(
-    #     "--fn", required=True, help="Add the filename in the data/asdi folder."
-    # )
-    # parser.add_argument(
-    #     "--lat", required=True, help="Latitude: within UK bounds [49.9, 60.9]."
-    # )
-    # parser.add_argument(
-    #     "--long", required=True, help="Longitude: within UK bounds [-8.2, 1.7]."
-    # )
-    # args = parser.parse_args()
-
-    # Parse the input arguments
-    # try:
-    #     FILENAME = os.path.join("data/asdi", args.fn)
-    #     LAT = float(args.lat)
-    #     LONG = float(args.long)
-    #     logger.info("Parsed input arguments successfully: filename=%s, lat=%.4f, long=%.4f",
-    #                 FILENAME, LAT, LONG)
-    # except ValueError as e:
-    #     logger.error("Error parsing input arguments: %s", e)
-    #     sys.exit(1)
     
-    # --------------- DEBUG---------------
-    FILENAME = "data/asdi/20241222T0600Z/20241222T0800Z-PT0002H00M-rainfall_accumulation-PT01H.nc"
-    LAT = 50
-    LONG = 2
-
-    # Query rainfall data
-    logger.info("Querying rainfall data...")
-    get_rainfall_m(FILENAME, LAT, LONG)
-    logger.info("Completed rainfall data query.")
+    logging.basicConfig(level=logging.INFO)
+    
+    nc_path = "data/asdi/20241222T0600Z/20241222T0800Z-PT0002H00M-rainfall_accumulation-PT01H.nc"
+    
+    try:
+        # Single point - returns Python float
+        lat, lon = 51.5074, -0.1278  # London
+        rainfall = latlon_to_rainfall(nc_path, lat, lon)
+        print(f"Single point rainfall: {rainfall} m (type: {type(rainfall)})")
+        
+        # Single point with indices
+        rainfall, x_idx, y_idx = latlon_to_rainfall(nc_path, lat, lon, return_indices=True)
+        print(f"Single point: {rainfall} m at grid ({x_idx}, {y_idx}) (types: {type(rainfall)}, {type(x_idx)}, {type(y_idx)})")
+        
+        # Multiple points - returns numpy array
+        lats = [51.5074, 53.4808]  # London, Manchester
+        lons = [-0.1278, -2.2426]
+        rainfalls = latlon_to_rainfall(nc_path, lats, lons)
+        print(f"Multiple points rainfall: {rainfalls} m (type: {type(rainfalls)}, dtype: {rainfalls.dtype})")
+        
+        # Multiple points with indices
+        rainfalls, x_idxs, y_idxs = latlon_to_rainfall(nc_path, lats, lons, return_indices=True)
+        for i, (rain, x, y) in enumerate(zip(rainfalls, x_idxs, y_idxs)):
+            print(f"Point {i+1}: {rain} m at grid ({x}, {y}) (types: {type(rain)}, {type(x)}, {type(y)})")
+            
+    except Exception as e:
+        print(f"Error: {str(e)}")
 

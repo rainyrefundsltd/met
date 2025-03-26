@@ -6,7 +6,7 @@
 # 2) The code will download a lot of files into a temp folder and extract the data that you require for the given latitude and longitude.
 
 # internal
-from read_nc import get_rainfall_m
+from read_nc import latlon_to_rainfall
 from fetch_open_meteo import HistoricData
 
 # external
@@ -36,7 +36,7 @@ def get_met_office_forecast(dir, lat, long):
         forecast_dt = pd.to_datetime(file.split("/")[3].split("-")[0])
         
         # Query files in data/asdi folder
-        rain_mm = float(get_rainfall_m(file,lat,long).data) * 1000
+        rain_mm = latlon_to_rainfall(file,lat,long) * 1000
         arr.append([forecast_publish_dt, forecast_dt, rain_mm])
 
     return arr

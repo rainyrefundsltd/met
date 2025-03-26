@@ -105,7 +105,9 @@ def date_file_key_str(forecast_publish_date, date2):
 
 
 def download_file(aws_access, aws_secret, aws_region, bucket_name, FILE_KEY, FILE_NAME_FORMAT, DROP_FOLDER):
+    
     """Download ASDI file to data/asdi."""
+    
     logger.info("Starting download for file: %s", FILE_KEY)
     s3_client = boto3.client(
         's3',
@@ -125,7 +127,9 @@ def download_file(aws_access, aws_secret, aws_region, bucket_name, FILE_KEY, FIL
 
 
 def download_files(forecast_publish_date, AWS_ACCESS, AWS_SECRET, AWS_REGION, BUCKET_NAME, PREFIX, FILE_NAME_FORMAT):
+    
     """Downloads all forecast files from a specific date, with specified file name (e.g. rainfall_accumulation-PT01H.nc)"""
+    
     logger.info("Downloading files for forecast publish date: %s", forecast_publish_date)
     
     # Get list of file names from this date, with correct file name
@@ -154,7 +158,9 @@ def download_files(forecast_publish_date, AWS_ACCESS, AWS_SECRET, AWS_REGION, BU
 
 def download_files_for_date_range(forecast_publish_start_date, forecast_publish_end_date, AWS_ACCESS, AWS_SECRET, AWS_REGION, 
                                   BUCKET_NAME, PREFIX, FILE_NAME_FORMAT):
+    
     """Loops over the download_files function above to create a library of forecasts at a given time each day (typically 9am UTC)"""
+    
     logger.info("Starting download for date range: %s to %s", forecast_publish_start_date, forecast_publish_end_date)
     date_range = pd.date_range(start=forecast_publish_start_date, end=forecast_publish_end_date)
     logger.debug("Date range contains %d dates.", len(date_range))
@@ -164,6 +170,7 @@ def download_files_for_date_range(forecast_publish_start_date, forecast_publish_
 
 
 if __name__ == "__main__":
+    
     # Set up argument parsing
     parser = argparse.ArgumentParser(description="UTC time for ASDI file download start & end datetimes.")
     parser.add_argument("--sd", required=True, help="The forecast publish date in 'YYYY-MM-DD HH:MM:SS' format")
@@ -191,5 +198,6 @@ if __name__ == "__main__":
     FILE_NAME_FORMAT = "rainfall_accumulation-PT01H.nc"
     
     logger.info("Initiating download_files_for_date_range.")
+    
     download_files_for_date_range(FORECAST_START_DATE, FORECAST_END_DATE, AWS_ACCESS, AWS_SECRET, AWS_REGION, 
                                   BUCKET_NAME, PREFIX, FILE_NAME_FORMAT)
