@@ -89,8 +89,8 @@ def HistoricData(params: Dict[str, Any]) -> pd.DataFrame:
 if __name__ == "__main__":
 
         temp = HistoricData({
-            'latitude': 50,
-            'longitude': 2,
+            'latitude': 53.869932,
+            'longitude': -1.379663,
             'start_date': '2024-11-01',
             'end_date': '2024-11-31',
             'hourly': 'precipitation'

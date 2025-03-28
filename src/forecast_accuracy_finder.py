@@ -23,7 +23,6 @@ def get_met_office_forecast(dir, lat, long):
     # List directory
     cwd_dir = os.path.join(os.getcwd(),"data/asdi",dir)
     dir_list = [os.path.join("data/asdi",dir, item) for item in os.listdir(cwd_dir)]
-    print(dir_list)
 
     logging.debug(f"Files in {dir}: {dir_list}")
 
@@ -101,25 +100,33 @@ def get_weather_comparison_df(lat, long, start_dt_str, end_dt_str):
     
     return df
 
+def create_forecast_accuracy_report(lat, long, start_dt_str, end_dt_str):
+
+    # Get data df
+    df = get_weather_comparison_df(lat, long, start_dt_str, end_dt_str)
+
+    # Rearrange to daily, this is taking data from 7am -> midnight
+    df = df.drop(columns=["forecast_datetime_utc","date"]).groupby("forecast_publish_datetime_utc").sum()
+
+    return df
+
 
 
 if __name__ == "__main__":
 
     # Set logging to INFO if ran on the cmd
-    logging.basicConfig(level=logging.CRITICAL)
+    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
     # Set up args
     # dir = "20240930T0600Z" 
     start_dt_str = "20230301T0600Z"
     end_dt_str = "20250324T0600Z"
-    lat = 53.48095
-    long = -2.23743
+    lat = 53.869932
+    long = -1.379663
 
-    df = get_weather_comparison_df(lat, long, start_dt_str, end_dt_str)
-    df.drop(columns=["forecast_datetime_utc","date"]).groupby("forecast_publish_datetime_utc").sum()
+    # Input the historic and forecasted values and create an accuracy report
+    df = create_forecast_accuracy_report(lat, long, start_dt_str, end_dt_str)
 
-    df.to_clipboard()
-
-    # df = get_met_office_forecast(dir,lat,long)
-    print(f"{df}\n SUM (mm): {df.thickness_of_rainfall_amount_mm.sum()}")
+    # Drop csv in temp file
+    df.to_csv(os.path.join(os.getcwd(),"data/temp/leeds.csv"))
