@@ -171,33 +171,36 @@ def download_files_for_date_range(forecast_publish_start_date, forecast_publish_
 
 if __name__ == "__main__":
     
-    # Set up argument parsing
-    parser = argparse.ArgumentParser(description="UTC time for ASDI file download start & end datetimes.")
-    parser.add_argument("--sd", required=True, help="The forecast publish date in 'YYYY-MM-DD HH:MM:SS' format")
-    parser.add_argument("--ed", required=True, help="The forecast publish date in 'YYYY-MM-DD HH:MM:SS' format")
-    args = parser.parse_args()
+    # # Set up argument parsing
+    # parser = argparse.ArgumentParser(description="UTC time for ASDI file download start & end datetimes.")
+    # parser.add_argument("--sd", required=True, help="The forecast publish date in 'YYYY-MM-DD HH:MM:SS' format")
+    # parser.add_argument("--ed", required=True, help="The forecast publish date in 'YYYY-MM-DD HH:MM:SS' format")
+    # args = parser.parse_args()
 
-    # Parse the start date argument
-    try:
-        FORECAST_START_DATE = datetime.strptime(args.sd, "%Y-%m-%d %H:%M:%S")
-        logger.info("Parsed start date: %s", FORECAST_START_DATE)
-    except ValueError:
-        logger.error("Incorrect start date format. Please use 'YYYY-MM-DD HH:MM:SS'")
-        sys.exit(1)
+    # # Parse the start date argument
+    # try:
+    #     FORECAST_START_DATE = datetime.strptime(args.sd, "%Y-%m-%d %H:%M:%S")
+    #     logger.info("Parsed start date: %s", FORECAST_START_DATE)
+    # except ValueError:
+    #     logger.error("Incorrect start date format. Please use 'YYYY-MM-DD HH:MM:SS'")
+    #     sys.exit(1)
 
-    # Parse the end date argument
-    try:
-        FORECAST_END_DATE = datetime.strptime(args.ed, "%Y-%m-%d %H:%M:%S")
-        logger.info("Parsed end date: %s", FORECAST_END_DATE)
-    except ValueError:
-        logger.error("Incorrect end date format. Please use 'YYYY-MM-DD HH:MM:SS'")
-        sys.exit(1)
+    # # Parse the end date argument
+    # try:
+    #     FORECAST_END_DATE = datetime.strptime(args.ed, "%Y-%m-%d %H:%M:%S")
+    #     logger.info("Parsed end date: %s", FORECAST_END_DATE)
+    # except ValueError:
+    #     logger.error("Incorrect end date format. Please use 'YYYY-MM-DD HH:MM:SS'")
+    #     sys.exit(1)
 
     BUCKET_NAME = "met-office-atmospheric-model-data"
     PREFIX = "uk-deterministic-2km/"
     FILE_NAME_FORMAT = "rainfall_accumulation-PT01H.nc"
     
     logger.info("Initiating download_files_for_date_range.")
-    
+
+    FORECAST_START_DATE = datetime.strptime("2024-04-01 07:00:00", "%Y-%m-%d %H:%M:%S")
+    FORECAST_END_DATE = datetime.strptime("2024-10-01 07:00:00", "%Y-%m-%d %H:%M:%S")
+
     download_files_for_date_range(FORECAST_START_DATE, FORECAST_END_DATE, AWS_ACCESS, AWS_SECRET, AWS_REGION, 
                                   BUCKET_NAME, PREFIX, FILE_NAME_FORMAT)

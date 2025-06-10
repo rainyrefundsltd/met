@@ -145,8 +145,8 @@ def accuracy_on_trigger(df, trigger_mm_float):
 if __name__ == "__main__":
 
     # Set example variables
-    fn = "total.csv"
-    df = pd.read_csv(os.path.join(os.getcwd(),"data/temp",fn))
+    fn = "all10.csv"
+    df = pd.read_csv(os.path.join(os.getcwd(),fn))
     df["precipitation_mm"] = pd.to_numeric(df["precipitation_mm"], errors='coerce')
     df["thickness_of_rainfall_amount_mm"] = pd.to_numeric(df["thickness_of_rainfall_amount_mm"], errors='coerce')
     trigger_mm_float = 2.5

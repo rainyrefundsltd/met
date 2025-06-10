@@ -157,7 +157,7 @@ if __name__ == "__main__":
     
     logging.basicConfig(level=logging.INFO)
     
-    nc_path = "data/asdi/20241222T0600Z/20241222T0800Z-PT0002H00M-rainfall_accumulation-PT01H.nc"
+    nc_path = "data/asdi/20230401T0600Z/20241222T0800Z-PT0002H00M-rainfall_accumulation-PT01H.nc"
     
     try:
         # Single point - returns Python float

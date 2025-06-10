@@ -1,0 +1,3 @@
+ERROR:ipykernel.comm:No such comm target registered: jupyter.widget.control
+WARNING:Comm:No such comm: 7d48cd9e-9f48-4f01-81c5-7112a10b026c
+DEBUG:Comm:Current comms: []

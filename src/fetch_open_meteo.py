@@ -58,10 +58,10 @@ def HistoricData(params: Dict[str, Any]) -> pd.DataFrame:
 
     # Process first location. Add a for-loop for multiple locations or weather models
     response = responses[0]
-    print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
-    print(f"Elevation {response.Elevation()} m asl")
-    print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
-    print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
+    # print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
+    # print(f"Elevation {response.Elevation()} m asl")
+    # print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
+    # print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
 
     # Process hourly data. The order of variables needs to be the same as requested.
     hourly = response.Hourly()
@@ -80,10 +80,10 @@ def HistoricData(params: Dict[str, Any]) -> pd.DataFrame:
         )
     }
     hourly_data["precipitation_mm"] = hourly_precipitation
-    hourly_dataframe = pd.DataFrame(data=hourly_data)
+    # hourly_dataframe = pd.DataFrame(data=hourly_data)
     # hourly_dataframe.date = hourly_dataframe.date.dt.tz_convert(real_timezone)
 
-    return hourly_dataframe
+    return hourly_data
 
 
 if __name__ == "__main__":

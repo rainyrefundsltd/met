@@ -7,7 +7,7 @@
 
 # internal
 from read_nc import latlon_to_rainfall
-from fetch_open_meteo import HistoricData
+# from fetch_open_meteo import HistoricData
 
 # external
 import logging
@@ -76,6 +76,39 @@ def get_range_met_office_forecasts(lat, long, start_dt_str, end_dt_str):
 
 
 
+
+def read_gpm_csvs_and_apply_logic(lat, long, start_dt_str, end_dt_str):
+
+    # Read both csvs and concat
+    df_23 = pd.read_csv("data/csvs/2023-04-01 00:00:00---2023-10-01 00:00:00.csv")
+    df_24 = pd.read_csv("data/csvs/2024-04-01 00:00:00---2024-10-01 00:00:00.csv")
+    df = pd.concat([df_23, df_24])
+    del df_23, df_24
+
+    # Get column from coordinates
+    col = f"[{str(lat)}, {str(long)}]"
+
+    # Set index to dt
+    df.set_index(df.columns[0],drop=True,inplace=True)
+    df.index = pd.to_datetime(df.index).tz_localize("UTC") # convert type to UTC
+    df.index.name = "actual_datetime_utc"
+
+    # Group by hour
+    df = df.groupby(pd.Grouper(freq='h')).sum()
+
+    # Get only relevant columns and rename
+    df = pd.DataFrame(df[col])
+    df.rename(columns={col: "gpm_IMERG-FR_mm"}, inplace=True)
+
+    # Shift everything upwards to show HOW MUCH RAIN WILL HAVE FALLEN IN THE PREVIOUS HOUR (this matches MET Office forecast logic)
+    df = df.shift(1)
+    df = df.iloc[1:, :]
+
+    return df
+
+
+
+
 def get_weather_comparison_df(lat, long, start_dt_str, end_dt_str):
 
     """ 
@@ -86,19 +119,16 @@ def get_weather_comparison_df(lat, long, start_dt_str, end_dt_str):
     # Get met office data
     df = get_range_met_office_forecasts(lat, long, start_dt_str, end_dt_str)
 
-    # Create required parameters for Open Meteo data pull
-    open_meteo_df = HistoricData({
-    'latitude': lat,
-    'longitude': long,
-    'start_date': pd.to_datetime(start_dt_str).strftime("%Y-%m-%d"),
-    'end_date': pd.to_datetime(end_dt_str).strftime("%Y-%m-%d"),
-    'hourly': 'precipitation'
-    }).dropna()
-
+    # Read GPM csvs, convery to hourly and splice using start and end dates
+    gpm_df = read_gpm_csvs_and_apply_logic(lat, long, start_dt_str, end_dt_str)
+    
     # Combine forecast and actuals into one table
-    df = df.merge(open_meteo_df, right_on="date", left_on="forecast_datetime_utc")
+    df = df.merge(gpm_df, right_on="actual_datetime_utc", left_on="forecast_datetime_utc")
     
     return df
+
+
+
 
 def create_forecast_accuracy_report(lat, long, start_dt_str, end_dt_str):
 
@@ -106,7 +136,11 @@ def create_forecast_accuracy_report(lat, long, start_dt_str, end_dt_str):
     df = get_weather_comparison_df(lat, long, start_dt_str, end_dt_str)
 
     # Rearrange to daily, this is taking data from 7am -> midnight
-    df = df.drop(columns=["forecast_datetime_utc","date"]).groupby("forecast_publish_datetime_utc").sum()
+    df = df.drop(columns=["forecast_datetime_utc"]).groupby("forecast_publish_datetime_utc").sum()
+
+    # Add column to show coordinates
+    df["latitude"] = float(lat)
+    df["longitude"] = float(long)
 
     return df
 
@@ -118,15 +152,28 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    # Set up args
-    # dir = "20240930T0600Z" 
-    start_dt_str = "20230301T0600Z"
-    end_dt_str = "20250324T0600Z"
-    lat = 53.869932
-    long = -1.379663
+    # Read csv with coords
+    df = pd.read_csv("data/csvs/random_uk_land_coords.csv", index_col=0)
 
-    # Input the historic and forecasted values and create an accuracy report
-    df = create_forecast_accuracy_report(lat, long, start_dt_str, end_dt_str)
+    # For concat
+    arr = []
 
-    # Drop csv in temp file
-    df.to_csv(os.path.join(os.getcwd(),"data/temp/leeds.csv"))
+    for index, row in df.iterrows():
+
+        for year in [23,24]:
+
+            # Only summer dates
+            start_dt_str = f"20{str(year)}0401T0700Z"
+            end_dt_str = f"20{str(year)}0930T0700Z"    
+
+            # Input the historic and forecasted values and create an accuracy report
+            _df = create_forecast_accuracy_report(row['lat'], row['long'], start_dt_str, end_dt_str)
+
+            # Append to arr for concat
+            arr.append(_df)
+
+    # Concatenate coordinate reports
+    df_concat = pd.concat(arr, ignore_index=False)
+
+    # Output to csv
+    df_concat.to_csv(os.path.join(os.getcwd(), "nimrod_comparison.csv"))

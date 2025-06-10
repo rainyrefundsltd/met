@@ -10,10 +10,17 @@ __pycache__/
 *.pyd
 
 # Ignore everything in the data folder
-data/asdi/*
-data/met_forecasts/*
-data/temp/*
+data/*
+MetOffice_NIMROD/
+*.csv
+*.xlsx
+*.html
+*.ipynb
+*.egg-info
+*.txt
+node_modules/
 
 # But allow .gitkeep so folders aren't deleted
 !data/asdi/.gitkeep
 !data/met_forecasts/.gitkeep
+!data/GPM/.gitkeep

@@ -68,3 +68,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 For inquiries, open an issue or contact the repository maintainer at `alexander.hall@rainyrefunds.com`.
+
+## CEDA Archive
+To get the 1km composite radar data use the bulk donwload feature facilitated by CEDA.
+
+Follow the instrucitons on this link, you will also need a TOKEN. https://data.ceda.ac.uk/badc/ukmo-nimrod/data/composite/uk-1km/2024
+
+More information about testing the token here: https://help.ceda.ac.uk/article/5191-downloading-multiple-files-with-wget
